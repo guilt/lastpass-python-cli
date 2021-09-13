@@ -96,7 +96,10 @@ def __print_error(message, file_=sys.stderr):
 
 def __write_config(username=None, password=None, mfa=False):
     with open(LPASS_CONFIG_FILE, 'w') as writable_config:
-        data = {'username': username, 'password': b64encode(str.encode(password)).decode(), 'mfa': mfa}
+        data = {'username': username, 'mfa': mfa}
+        if password:
+            __print_message('Writing Passwords to Configuration is not Recommended.')
+            data['password']: b64encode(str.encode(password)).decode()
         writable_config.write(json.dumps(data))
 
 
@@ -134,13 +137,14 @@ def command_login(args):
     if not args.plaintext_key:
         raise NotImplementedError('Unable to Encrypt Passwords.')
     if args.trust and args.mfa:
-        raise NotImplementedError('Unable to Use Trusted MFA Mode.')
-    if os.path.exists(LPASS_CONFIG_FILE):
+        raise NotImplementedError('Unable to Use Trusted and MFA Mode.')
+    if args.trust and os.path.exists(LPASS_CONFIG_FILE):
         if not args.force:
             raise Exception('Unable to Overwrite Configuration.')
     (_, password) = __get_login(args.username, os.getenv('LPASS_PASSWORD', None), args.mfa)
+    if args.trust:
+        __write_config(args.username, password, args.mfa)
     __print_message('Logged into {}'.format(__colored(args.username, S_YELLOW)))
-    __write_config(args.username, password, args.mfa)
 
 
 def command_logout(args):
